@@ -2,6 +2,20 @@
 
 HTML, CSS, and JavaScript frontend with a Python HTTP server and SQLite database. Python 3.10 or newer is required. No extra packages or database installation are needed.
 
+## Screenshots
+
+**Find a space.** In this sample yard, bus space B01 is booked. Drivers can see the nine available spaces and compare hourly and daily rates.
+
+![Parking map showing five truck spaces and four bus spaces available beside the booking form](docs/screenshots/parking-map.png)
+
+**Manage a booking.** The driver has four hours left on a ₹400 booking and owes ₹320 after an ₹80 payment. From the same card, they can extend the stay or open the receipt.
+
+![My bookings showing a four-hour stay in B01, ₹320 still to pay, and the receipt and extension buttons](docs/screenshots/my-bookings.png)
+
+**Track arrivals.** The admin sees the same B01 reservation under “Awaiting arrival” and can check which spaces are free.
+
+![Admin parking overview showing one vehicle awaiting arrival and B01 highlighted on the space list](docs/screenshots/admin-overview.png)
+
 ## Run in VS Code
 
 1. Open the Desktop `smart-parking` folder in VS Code.
