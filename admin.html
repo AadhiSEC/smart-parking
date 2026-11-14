@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parking Admin — Yard operations</title>
+  <link rel="stylesheet" href="admin.css?v=d6239875df1c">
+  <script src="admin.js?v=fe238a8317ac" defer></script>
+</head>
+<body>
+  <header><a class="brand" href="/admin"><span class="brand-mark">P↗</span> Parking admin<span class="tag">LOCAL DEMO</span></a><div class="header-actions"><a href="/">Customer website ↗</a><button id="logout" class="button secondary" hidden>Sign out</button></div></header>
+  <main>
+    <section id="login-panel" class="login-layout">
+      <div class="login-intro"><p class="eyebrow">YARD OPERATIONS</p><h1>A clear view.<br>A smoother stop.</h1><p>One place to follow bookings, welcome drivers,<br>and free up spaces when vehicles leave.</p><div class="login-steps"><span>01 <strong>View bookings</strong></span><span>02 <strong>Record arrivals</strong></span><span>03 <strong>Confirm departures</strong></span></div></div>
+      <div class="login-card"><span class="login-icon" aria-hidden="true">↗</span><h2>Admin sign in</h2><p class="muted">Use the password you set on this computer.</p><div id="setup-note" class="note" hidden><strong>Set up your admin password</strong><p>In the VS Code terminal, stop the server with Ctrl+C, then run:</p><code>python server.py --set-admin</code><p>Choose and confirm a password. Start the server again with <code>python server.py</code>, then refresh this page.</p></div><form id="login-form"><label for="password">Admin password</label><input id="password" type="password" autocomplete="current-password" minlength="10" maxlength="128" required><button id="login-button" class="button primary" type="submit">Sign in <span>↗</span></button></form><p id="login-message" class="message" role="status">Connecting…</p><p class="fine-print">Admin access is separate from customer bookings. Sessions last up to 8 hours.</p></div>
+    </section>
+
+    <section id="dashboard" hidden>
+      <div class="page-heading"><div><p class="eyebrow">YARD OPERATIONS</p><h1>Parking overview</h1><p class="muted">Five truck spaces. Five bus spaces. Every arrival accounted for.</p></div><button class="button secondary" id="refresh">Refresh ↻</button></div>
+      <p id="sync-status" class="sync-status" role="status">Loading yard data…</p>
+      <div class="stats"><article class="stat green"><span>Truck spaces available</span><div><strong id="truck-count">—</strong><small>/ 5</small></div><p>Ready for a booking</p></article><article class="stat green"><span>Bus spaces available</span><div><strong id="bus-count">—</strong><small>/ 5</small></div><p>Ready for a booking</p></article><article class="stat"><span>Awaiting arrival</span><div><strong id="reserved-count">—</strong></div><p>Confirmed, not checked in</p></article><article class="stat"><span>Vehicles on site</span><div><strong id="parked-count">—</strong></div><p id="overdue-summary">Checked in and still parked</p></article></div>
+      <div class="yard-strip"><span class="eyebrow">SPACE STATUS</span><div id="space-status" class="space-status" aria-label="Parking space status"></div><span class="yard-key"><i></i> Occupied or reserved</span></div>
+      <div class="policy-note"><strong>Keep availability accurate.</strong> Check a vehicle in when it arrives and out when it leaves. Checked-in vehicles keep their space until admin check-out, even after the booked end time.</div>
+      <details class="report-panel" id="manage-spaces">
+        <summary>Manage spaces <span>Block for maintenance or reopen</span></summary>
+        <div class="report-body">
+          <p class="muted">Block an empty space while it is unavailable. Customers will see your reason. Spaces with active bookings cannot be blocked.</p>
+          <p id="space-message" class="message" role="status" aria-live="polite"></p>
+          <div id="space-controls" class="space-controls"></div>
+        </div>
+      </details>
+      <details class="report-panel" id="outstanding-payments">
+        <summary>Outstanding payments <span>Unpaid and partially paid bookings</span></summary>
+        <div class="report-body">
+          <p class="muted">All bookings with a remaining balance, including vehicles already checked out. Cancelled, released and expired bookings are included because their recorded charges are retained.</p>
+          <form id="outstanding-filter-form" class="outstanding-filters">
+            <div class="outstanding-search-field"><label for="outstanding-search">Search outstanding bookings</label><input id="outstanding-search" type="search" maxlength="100" placeholder="Vehicle number, driver name or booking ID"></div>
+            <div><label for="outstanding-payment-filter">Payment status</label><select id="outstanding-payment-filter"><option value="all">Unpaid and part paid</option><option value="unpaid">Unpaid</option><option value="partial">Part paid</option></select></div>
+            <div><label for="outstanding-status-filter">Vehicle status</label><select id="outstanding-status-filter"><option value="all">All bookings</option><option value="departed">Checked-out vehicles only</option></select></div>
+            <button type="submit" class="button primary" id="apply-outstanding-filters">Apply filters</button><button type="button" class="button secondary" id="clear-outstanding-filters">Clear filters</button>
+          </form>
+          <p id="outstanding-applied" class="muted">Showing all outstanding bookings.</p>
+          <button type="button" class="button secondary" id="download-outstanding" disabled>Download Excel (.xlsx)</button><p id="outstanding-download-message" class="message" role="status" aria-live="polite"></p>
+          <p class="muted">Downloads all matching bookings using the applied filters and latest saved balances.</p>
+          <div class="outstanding-summary"><div><span>Pending for these results</span><strong id="outstanding-total">—</strong></div><div><span>Matching bookings</span><strong id="outstanding-count">—</strong></div><button type="button" id="refresh-outstanding" class="button secondary">Refresh balances</button></div>
+          <p id="outstanding-message" class="message" role="status" aria-live="polite">Open this section to load balances.</p>
+          <div class="table-scroll"><table><thead><tr><th scope="col">Vehicle / booking</th><th scope="col">Space / status</th><th scope="col">Booked</th><th scope="col">Paid</th><th scope="col">Remaining</th><th scope="col">Action</th></tr></thead><tbody id="outstanding-rows"></tbody></table></div>
+          <p id="outstanding-empty" class="message" hidden>No outstanding payments. All booking balances are settled.</p>
+          <div class="outstanding-pages"><button type="button" class="button secondary" id="outstanding-prev" disabled>Previous</button><span id="outstanding-page"></span><button type="button" class="button secondary" id="outstanding-next" disabled>Next</button></div>
+        </div>
+      </details>
+      <details class="report-panel" id="daily-report">
+        <summary>Daily reports <span>Bookings, arrivals & departures</span></summary>
+        <div class="report-body">
+          <p class="muted">Each report covers midnight to midnight in Indian Standard Time (IST, UTC+05:30).</p>
+          <form id="report-form" class="report-controls"><div><label for="report-date">Report date</label><input id="report-date" type="date" required></div><button type="submit" class="button primary" id="load-report">Show report</button><a class="button secondary" id="download-report" hidden>Download Excel (.xlsx) ↧</a></form>
+          <p id="report-message" class="message" role="status" aria-live="polite">Choose a date and show its report.</p>
+          <div id="report-results" hidden>
+            <div class="stats"><article class="stat"><span>New bookings</span><div><strong id="report-bookings">0</strong></div><p>Created on this date</p></article><article class="stat"><span>Extensions</span><div><strong id="report-extensions">0</strong></div><p>Confirmed on this date</p></article><article class="stat"><span>Arrivals</span><div><strong id="report-arrivals">0</strong></div><p>Actual admin check-ins</p></article><article class="stat"><span>Departures</span><div><strong id="report-departures">0</strong></div><p>Actual admin check-outs</p></article></div>
+            <div class="report-amounts"><div><span>Original booking amounts</span><strong id="report-originalAmount"></strong></div><div><span>Extension amounts</span><strong id="report-extensionAmount"></strong></div><div><span>Gross booked amount</span><strong id="report-bookedAmount"></strong></div></div>
+            <p class="note"><strong>These are not payments received.</strong> Includes amounts recorded on this date, even if a booking was later cancelled or released. Later extensions are counted on their own dates. Vehicle status below is current when the report is generated.</p>
+            <h3>Recorded collections</h3><p class="muted">Cash and UPI recorded by staff on this date, minus corrections made on this date. These entries do not verify bank transactions or issue refunds.</p>
+            <div class="report-amounts"><div><span>Cash (net)</span><strong id="collection-cashAmount"></strong></div><div><span>UPI (net)</span><strong id="collection-upiAmount"></strong></div><div><span>Total recorded collections (net)</span><strong id="collection-totalAmount"></strong></div></div>
+            <div class="table-scroll"><table><thead><tr><th>Entry / time (IST)</th><th>Vehicle / booking</th><th>Method</th><th>Amount</th><th>Note</th></tr></thead><tbody id="collection-rows"></tbody></table></div><p id="collection-empty" class="message" hidden>No payments or corrections recorded on this date.</p>
+            <p id="report-records" class="muted"></p>
+            <div class="table-scroll"><table><thead><tr><th scope="col">Event / time (IST)</th><th scope="col">Vehicle & driver</th><th scope="col">Booking / space</th><th scope="col">Recorded amount</th><th scope="col">Current status</th></tr></thead><tbody id="report-rows"></tbody></table></div>
+            <p id="report-empty" class="message" hidden>No bookings, extensions, arrivals, or departures were recorded on this date.</p>
+          </div>
+        </div>
+      </details>
+      <details class="report-panel" id="database-backups">
+        <summary>Database backup & restore <span>Save a copy of your parking data</span></summary>
+        <div class="report-body backup-body">
+          <p class="muted">Save bookings, customer accounts, prices and blocked spaces in one backup file. You can download a backup while the website is running.</p>
+          <p class="note"><strong>Keep your backup private.</strong> It contains customer details and account information. Store a copy on another drive so you can recover it if this computer fails.</p>
+          <button type="button" class="button primary" id="download-backup">Download database backup ↧</button>
+          <p id="backup-message" class="message" role="status" aria-live="polite"></p>
+          <h3>Restore a saved backup</h3>
+          <p class="muted">Stop the server with <strong>Ctrl+C</strong> in VS Code, then run the command below. Replace the example path with your backup file's full path, keeping the quotation marks.</p>
+          <p><code>python server.py --restore "FULL_PATH_TO_BACKUP.sqlite3"</code></p>
+          <p class="muted">The command checks the file and shows its date and record counts. Type <strong>RESTORE</strong> to replace current data, or press Enter to cancel. It saves a safety backup first. After restoring, start the server and sign in using the passwords from that backup.</p>
+        </div>
+      </details>
+      <details class="price-panel">
+        <summary>Price settings <span>Hourly & daily rates · ₹</span></summary>
+        <form id="price-form">
+          <p class="muted" id="price-help">New bookings use these prices. Existing bookings and receipts keep their original amounts. Enter whole rupees from ₹1 to ₹1,00,000.</p>
+          <div class="price-grid">
+            <fieldset><legend>Trucks</legend><label for="truck-hour-price">Truck price per hour (₹)</label><input id="truck-hour-price" type="number" min="1" max="100000" step="1" required aria-describedby="price-help"><label for="truck-day-price">Truck price per day (₹)</label><input id="truck-day-price" type="number" min="1" max="100000" step="1" required aria-describedby="price-help"></fieldset>
+            <fieldset><legend>Buses</legend><label for="bus-hour-price">Bus price per hour (₹)</label><input id="bus-hour-price" type="number" min="1" max="100000" step="1" required aria-describedby="price-help"><label for="bus-day-price">Bus price per day (₹)</label><input id="bus-day-price" type="number" min="1" max="100000" step="1" required aria-describedby="price-help"></fieldset>
+          </div>
+          <div class="price-actions"><button id="save-prices" class="button primary" type="submit" disabled>Save prices</button><button id="reload-prices" class="button secondary" type="button">Reload current prices</button></div>
+          <p id="price-message" class="message" role="status" aria-live="polite"></p>
+        </form>
+      </details>
+      <section class="booking-panel" aria-labelledby="booking-heading"><div class="panel-heading"><div><h2 id="booking-heading">Bookings</h2><p id="record-summary" class="muted">Loading…</p></div><div class="filters" role="group" aria-label="Booking view"><button type="button" data-view="active" aria-pressed="true" class="active">Active</button><button type="button" data-view="history" aria-pressed="false">History</button><button type="button" data-view="all" aria-pressed="false">All</button></div></div>
+        <div class="search-row"><div class="search-field"><label for="search">Search bookings</label><input id="search" type="search" placeholder="Driver, registration, space or booking ID"></div><div><label for="vehicle-filter">Vehicle type</label><select id="vehicle-filter"><option value="all">All vehicles</option><option value="truck">Trucks</option><option value="bus">Buses</option></select></div></div>
+        <p id="action-message" class="message action-message" role="status" aria-live="polite"></p>
+        <div class="table-scroll"><table><thead><tr><th scope="col">Vehicle & driver</th><th scope="col">Space</th><th scope="col">Booked stay</th><th scope="col">Amount</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead><tbody id="booking-rows"></tbody></table></div><div id="empty-state" class="empty-state" hidden><span aria-hidden="true">↗</span><h3>No bookings here yet</h3><p>Create a booking on the customer website, or change your filters.</p></div>
+      </section>
+      <p class="fine-print">Booking amounts show charges; recorded collections show staff-entered payments. Cancellation and check-out preserve booking and payment history.</p>
+    </section>
+  </main>
+  <footer><span>Parking admin</span><span>Local development · Staff access</span></footer>
+  <dialog id="action-dialog" aria-labelledby="dialog-title"><p class="eyebrow">CONFIRM ACTION</p><h2 id="dialog-title">Confirm action</h2><p id="dialog-description"></p>
+    <section id="checkout-payment" hidden aria-label="Payment review">
+      <p id="checkout-balance" class="note"></p>
+      <p id="checkout-message" class="message" role="status" aria-live="polite"></p>
+      <label id="unpaid-confirmation" hidden><input type="checkbox" id="allow-unpaid"> <span id="unpaid-label"></span></label>
+      <div class="dialog-buttons"><button type="button" class="button secondary" id="checkout-pay">Record payment</button><button type="button" class="button secondary" id="reload-checkout">Reload balance</button></div>
+    </section>
+    <div class="dialog-buttons"><button type="button" class="button secondary" id="dismiss-action">Go back</button><button type="button" class="button primary" id="confirm-action">Confirm</button></div></dialog>
+  <dialog id="space-dialog" aria-labelledby="space-dialog-title">
+    <form id="space-form">
+      <p class="eyebrow">SPACE AVAILABILITY</p><h2 id="space-dialog-title">Block space</h2>
+      <p id="space-dialog-description" class="muted"></p>
+      <div id="block-reason-field"><label for="block-reason">Reason shown to customers</label><input id="block-reason" maxlength="160" required placeholder="For example, Ground repair"></div>
+      <div class="dialog-buttons"><button type="button" class="button secondary" id="dismiss-space">Go back</button><button type="submit" class="button primary" id="confirm-space">Block space</button></div>
+    </form>
+  </dialog>
+<dialog id="payment-dialog" aria-labelledby="payment-title">
+    <div class="payment-heading"><h2 id="payment-title">Booking payments</h2><button type="button" class="button secondary" id="close-payments">Close</button></div>
+    <p id="payment-booking" class="muted"></p><p id="payment-balance" class="note"></p>
+    <p class="muted">Record money you have already received. Check your UPI account before recording a UPI payment.</p>
+    <form id="payment-form"><label for="payment-amount">Amount received (₹)</label><input id="payment-amount" type="number" min="1" step="1" required>
+      <label for="payment-method">Payment method</label><select id="payment-method"><option value="cash">Cash</option><option value="upi">UPI</option></select>
+      <button type="submit" class="button primary" id="save-payment">Record payment received</button></form>
+    <p id="payment-message" class="message" role="status" aria-live="polite"></p>
+    <button type="button" class="button secondary" id="reload-payments">Reload payments</button>
+    <button type="button" class="button secondary" id="open-waiver">Waive an amount</button>
+    <button type="button" class="button primary" id="return-checkout" hidden>Continue to checkout</button>
+    <form id="waiver-form" hidden>
+      <h3 id="waiver-title">Waive an amount</h3><p id="waiver-description" class="note"></p>
+      <div id="waiver-amount-field"><label for="waiver-amount">Amount to waive (₹)</label><input id="waiver-amount" type="number" min="1" step="1" required aria-describedby="waiver-preview"><p id="waiver-preview" class="message" role="status" aria-live="polite"></p></div>
+      <label for="waiver-reason">Reason (admin only)</label><input id="waiver-reason" maxlength="160" required>
+      <div class="dialog-buttons"><button type="button" class="button secondary" id="cancel-waiver">Go back</button><button type="submit" class="button primary" id="save-waiver">Confirm waiver</button></div>
+    </form>
+    <h3>Waiver history</h3><div id="waiver-entries"></div>
+    <h3>Payment history</h3><div id="payment-entries"></div>
+    <form id="correction-form" hidden><h3 id="correction-title">Correct an entry</h3><p class="muted">Use this only for an incorrect record. It removes the recorded amount from the paid total and keeps the original entry in history. It does not send a refund.</p><label for="correction-reason">Reason for correction</label><input id="correction-reason" maxlength="160" required><div class="dialog-buttons"><button type="button" class="button secondary" id="cancel-correction">Go back</button><button type="submit" class="button primary" id="save-correction">Confirm correction</button></div></form>
+  </dialog>
+</body>
+</html>

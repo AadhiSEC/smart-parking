@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Booking receipt — Parkway</title>
+  <link rel="stylesheet" href="receipt.css?v=0edee23404ef">
+  <script src="receipt.js?v=a8b396d83693" defer></script>
+</head>
+<body>
+  <header class="toolbar"><a href="/#bookings">← My bookings</a><div class="toolbar-actions"><button id="refresh-receipt" type="button">Refresh receipt</button><button id="print-receipt" type="button" disabled>Print / Save as PDF</button></div></header>
+  <main>
+    <p id="receipt-message" class="notice" role="status" aria-live="polite">Loading your receipt…</p>
+    <button id="retry-receipt" class="retry" type="button" hidden>Try again</button>
+    <article id="receipt" hidden aria-labelledby="receipt-title">
+      <header class="receipt-heading"><div><a class="brand" href="/">parkway<span>.</span></a><p>Parkway Truck & Bus Yard</p></div><span class="demo-label">LOCAL DEMO</span></header>
+      <div class="title-row"><div><p class="eyebrow">YOUR PARKING RECORD</p><h1 id="receipt-title">Booking receipt</h1></div><span id="receipt-status" class="status"></span></div>
+      <p class="booking-reference">Booking ID <strong id="receipt-id"></strong></p>
+      <dl class="details">
+        <div><dt>Driver name</dt><dd id="receipt-driver"></dd></div>
+        <div><dt>Vehicle registration</dt><dd id="receipt-plate"></dd></div>
+        <div><dt>Vehicle type</dt><dd id="receipt-vehicle"></dd></div>
+        <div><dt>Parking space</dt><dd id="receipt-space"></dd></div>
+        <div><dt>Booked start</dt><dd id="receipt-start"></dd></div>
+        <div><dt>Booked end</dt><dd id="receipt-end"></dd></div>
+        <div id="arrival-row" hidden><dt>Actual check-in</dt><dd id="receipt-arrival"></dd></div>
+        <div id="departure-row" hidden><dt>Actual check-out</dt><dd id="receipt-departure"></dd></div>
+      </dl>
+      <p id="receipt-timezone" class="small"></p>
+      <section class="charges" aria-label="Booking price"><div id="receipt-lines"></div><div class="total"><span>Booked total</span><strong id="receipt-total"></strong></div></section>
+      <section class="receipt-payment" aria-labelledby="payment-title">
+        <div class="payment-heading"><h2 id="payment-title">Payment details</h2><strong id="receipt-payment-status" class="status"></strong></div>
+        <dl class="payment-totals">
+          <div><dt>Amount paid</dt><dd id="receipt-paid"></dd></div>
+          <div><dt>Amount waived (no payment)</dt><dd id="receipt-waived"></dd></div>
+          <div><dt>Remaining balance</dt><dd id="receipt-balance"></dd></div>
+        </dl>
+        <p id="receipt-methods" class="payment-methods"></p>
+      </section>
+      <div class="payment-note"><strong>Payments recorded by staff</strong><p>Cash and UPI amounts reflect staff records, including corrections. Online payments are not collected or verified here. This local demo receipt is not a tax invoice. The booked total includes confirmed extensions.</p></div>
+      <footer><p id="receipt-generated"></p><p>Status is shown at the time this receipt was loaded. Unarrived bookings expire at their booked end time. Checked-in vehicles keep their space until admin check-out.</p></footer>
+    </article>
+    <p class="print-help">To download: click <strong>Print / Save as PDF</strong>, choose <strong>Save as PDF</strong> in the print window, then save.</p>
+  </main>
+</body>
+</html>

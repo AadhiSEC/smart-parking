@@ -1,0 +1,13 @@
+data/
+__pycache__/
+*.pyc
+
+# Local backups, databases and credentials
+*.zip
+*.sqlite3*
+*.sqlite
+*.db
+.env
+.env.*
+*.pem
+*.key
